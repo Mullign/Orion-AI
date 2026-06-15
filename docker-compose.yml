@@ -1,0 +1,110 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "${OLLAMA_BIND:-127.0.0.1}:11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+    restart: unless-stopped
+
+  ollama-init:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      ORION_PULL_MODEL: ${ORION_PULL_MODEL:-true}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        if [ "$${ORION_PULL_MODEL:-true}" = "true" ]; then
+          echo "Pulling Ollama model: $${OLLAMA_MODEL}"
+          ollama pull "$${OLLAMA_MODEL}"
+        else
+          echo "Skipping model pull (ORION_PULL_MODEL=false)"
+        fi
+    restart: "no"
+
+  orion:
+    build:
+      context: ./chat
+      dockerfile: Dockerfile
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:3001"
+    depends_on:
+      ollama:
+        condition: service_healthy
+      ollama-init:
+        condition: service_completed_successfully
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      ORION_PULL_MODEL: ${ORION_PULL_MODEL:-true}
+      APP_USERNAME: ${ORION_ADMIN_USER:-admin}
+      APP_PASSWORD: ${ORION_ADMIN_PASSWORD:-}
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-sonnet-4-20250514}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${GOOGLE_GENERATIVE_AI_API_KEY:-}
+      GOOGLE_MODEL: ${GOOGLE_MODEL:-gemini-2.0-flash}
+      ORION_SYSTEM_PROMPT: ${ORION_SYSTEM_PROMPT:-}
+      APP_DATA_DIR: /app/data
+      APP_PORT: ${APP_PORT:-7000}
+    volumes:
+      - ${APP_DATA_DIR:-./data}:/app/data
+    restart: unless-stopped
+
+  # Optional marketing site — enable with: docker compose --profile site up -d --build
+  site:
+    profiles: ["site"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${SITE_BIND:-127.0.0.1}:${SITE_PORT:-3000}:3000"
+    restart: unless-stopped
+
+  # Dev hot-reload stack — enable with: docker compose --profile dev up --build
+  orion-dev:
+    profiles: ["dev"]
+    build:
+      context: ./chat
+      dockerfile: Dockerfile.dev
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:3001"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ./chat:/app
+      - /app/node_modules
+      - /app/.next
+      - ${APP_DATA_DIR:-./data}:/app/data
+    environment:
+      WATCHPACK_POLLING: "true"
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      APP_USERNAME: ${ORION_ADMIN_USER:-admin}
+      APP_PASSWORD: ${ORION_ADMIN_PASSWORD:-}
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      APP_DATA_DIR: /app/data
+      APP_PORT: ${APP_PORT:-7000}
+    env_file:
+      - path: .env
+        required: false
+    restart: unless-stopped
+
+volumes:
+  ollama_data:

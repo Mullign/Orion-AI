@@ -1,0 +1,255 @@
+@import "tailwindcss";
+
+:root {
+  --background: #030014;
+  --foreground: #e8edf5;
+  --muted: #94a3b8;
+  --border: rgba(148, 163, 184, 0.18);
+  --card: rgba(12, 10, 31, 0.72);
+  --accent: #8b9cf6;
+  --accent-soft: rgba(139, 156, 246, 0.15);
+  --nebula: rgba(99, 102, 241, 0.22);
+  --star: rgba(255, 255, 255, 0.85);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-card: var(--card);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes nebula-drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate(3%, -4%) scale(1.08);
+    opacity: 0.75;
+  }
+}
+
+@keyframes nebula-drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate(-4%, 3%) scale(1.12);
+    opacity: 0.65;
+  }
+}
+
+.space-bg {
+  background-color: var(--background);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, var(--nebula), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(56, 189, 248, 0.08), transparent 50%),
+    radial-gradient(ellipse 50% 30% at 0% 80%, rgba(167, 139, 250, 0.1), transparent 50%);
+}
+
+.nebula {
+  filter: blur(40px);
+  will-change: transform, opacity;
+}
+
+.nebula-one {
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(99, 102, 241, 0.35),
+    transparent 55%
+  );
+  animation: nebula-drift-a 18s ease-in-out infinite;
+}
+
+.nebula-two {
+  background: radial-gradient(
+    circle at 70% 60%,
+    rgba(56, 189, 248, 0.2),
+    transparent 50%
+  );
+  animation: nebula-drift-b 24s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nebula-one,
+  .nebula-two {
+    animation: none;
+  }
+
+  .review-panic-shake,
+  .review-text-shake,
+  .ufo-orbit-track {
+    animation: none !important;
+  }
+}
+
+@keyframes panic-shake {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  10% {
+    transform: translate(-6px, 3px) rotate(-1.2deg);
+  }
+  20% {
+    transform: translate(5px, -4px) rotate(1deg);
+  }
+  30% {
+    transform: translate(-4px, -2px) rotate(-0.8deg);
+  }
+  40% {
+    transform: translate(6px, 4px) rotate(1.1deg);
+  }
+  50% {
+    transform: translate(-5px, 2px) rotate(-1deg);
+  }
+  60% {
+    transform: translate(4px, -3px) rotate(0.9deg);
+  }
+  70% {
+    transform: translate(-3px, 4px) rotate(-0.7deg);
+  }
+  80% {
+    transform: translate(5px, -2px) rotate(1deg);
+  }
+  90% {
+    transform: translate(-4px, 3px) rotate(-0.9deg);
+  }
+}
+
+@keyframes text-panic {
+  0%,
+  100% {
+    transform: translateX(0);
+    letter-spacing: normal;
+  }
+  25% {
+    transform: translateX(-3px);
+    letter-spacing: 0.04em;
+  }
+  75% {
+    transform: translateX(3px);
+    letter-spacing: 0.02em;
+  }
+}
+
+@keyframes ufo-fly {
+  0% {
+    left: 5%;
+    top: 8%;
+    transform: rotate(-12deg);
+  }
+  20% {
+    left: 82%;
+    top: 12%;
+    transform: rotate(18deg);
+  }
+  40% {
+    left: 88%;
+    top: 62%;
+    transform: rotate(8deg);
+  }
+  60% {
+    left: 50%;
+    top: 78%;
+    transform: rotate(-15deg);
+  }
+  80% {
+    left: 8%;
+    top: 55%;
+    transform: rotate(22deg);
+  }
+  100% {
+    left: 5%;
+    top: 8%;
+    transform: rotate(-12deg);
+  }
+}
+
+.review-panic-shake {
+  animation: panic-shake 0.35s linear infinite;
+}
+
+.review-text-shake {
+  display: inline-block;
+  animation: text-panic 0.2s linear infinite;
+}
+
+.ufo-orbit-track {
+  position: relative;
+  min-height: 360px;
+}
+
+.ufo-ship {
+  position: absolute;
+  animation: ufo-fly 7s linear infinite;
+  filter: drop-shadow(0 0 12px rgba(139, 156, 246, 0.8));
+}
+
+.glow-ring {
+  box-shadow:
+    0 0 60px rgba(99, 102, 241, 0.25),
+    0 0 120px rgba(56, 189, 248, 0.08);
+}
+
+.section-label {
+  letter-spacing: 0.35em;
+}
+
+.eyebrow {
+  letter-spacing: 0.08em;
+}
+
+.panel-card {
+  background: var(--card);
+  backdrop-filter: blur(8px);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.panel-card:hover {
+  border-color: rgba(139, 156, 246, 0.35);
+}
+
+.terminal {
+  background: rgba(8, 6, 22, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.code-block {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
