@@ -1,102 +1,15 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { isAuthConfigured } from "@/lib/auth-store";
 
-import { SpaceBackground } from "@/components/SpaceBackground";
+import { LoginForm } from "./LoginForm";
+
+export const dynamic = "force-dynamic";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  if (!isAuthConfigured()) {
+    redirect("/setup");
+  }
 
-  return (
-    <>
-      <SpaceBackground />
-      <div className="flex min-h-screen items-center justify-center px-6 py-12">
-        <div className="w-full max-w-md rounded-2xl border border-border bg-card/90 p-8 backdrop-blur-sm">
-          <div className="mb-8 flex flex-col items-center text-center">
-            <Image
-              src="/orion-logo.jpg"
-              alt="Orion"
-              width={72}
-              height={72}
-              className="mb-4 invert"
-            />
-            <p className="text-xs font-medium uppercase tracking-[0.25em] text-accent">
-              Orion Chat
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold text-foreground">
-              Sign in to continue
-            </h1>
-            <p className="mt-2 text-sm text-muted">
-              This workspace is password protected.
-            </p>
-          </div>
-
-          <form
-            className="space-y-4"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              setLoading(true);
-              setError("");
-
-              const response = await fetch("/api/auth/login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password }),
-              });
-
-              setLoading(false);
-
-              if (!response.ok) {
-                const data = (await response.json()) as { error?: string };
-                setError(data.error ?? "Login failed.");
-                return;
-              }
-
-              router.push("/");
-              router.refresh();
-            }}
-          >
-            <label className="block text-sm">
-              <span className="text-muted">Username</span>
-              <input
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-foreground outline-none focus:border-accent/50"
-                autoComplete="username"
-                required
-              />
-            </label>
-
-            <label className="block text-sm">
-              <span className="text-muted">Password</span>
-              <input
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="mt-2 w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-foreground outline-none focus:border-accent/50"
-                autoComplete="current-password"
-                required
-              />
-            </label>
-
-            {error ? <p className="text-sm text-red-400">{error}</p> : null}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-full bg-accent py-3 text-sm font-medium text-background transition hover:opacity-90 disabled:opacity-50"
-            >
-              {loading ? "Signing in..." : "Enter workspace"}
-            </button>
-          </form>
-        </div>
-      </div>
-    </>
-  );
+  return <LoginForm />;
 }

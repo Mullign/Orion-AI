@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 
 import {
   createSessionToken,
-  SESSION_COOKIE,
   validateCredentials,
 } from "@/lib/auth";
+import { SESSION_COOKIE } from "@/lib/auth-constants";
 
 export async function POST(req: Request) {
   try {

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 import { DockerIcon, OllamaIcon } from "@/components/icons/BrandIcons";
 import type { ProviderId } from "@/lib/ai/providers-config";
+import type { ConversationSummary } from "@/lib/conversations/types";
 
 export type ProviderInfo = {
   id: ProviderId;
@@ -22,6 +23,12 @@ type ProviderPanelProps = {
   onCustomModelChange: (model: string) => void;
   onNewChat: () => void;
   messageCount: number;
+  conversations: ConversationSummary[];
+  activeConversationId: string | null;
+  historyLoading: boolean;
+  onSelectConversation: (id: string) => void;
+  onDeleteConversation: (id: string) => void;
+  formatConversationTime: (value: string) => string;
 };
 
 const providerIcons: Record<string, ReactNode> = {
@@ -41,12 +48,18 @@ export function ProviderPanel({
   onCustomModelChange,
   onNewChat,
   messageCount,
+  conversations,
+  activeConversationId,
+  historyLoading,
+  onSelectConversation,
+  onDeleteConversation,
+  formatConversationTime,
 }: ProviderPanelProps) {
   const activeProvider = providers.find((item) => item.id === provider);
   const useCustomModel = provider === "ollama" && customModel.trim().length > 0;
 
   return (
-    <aside className="flex flex-col gap-5 rounded-2xl border border-border bg-card/80 p-5 backdrop-blur-sm">
+    <aside className="flex max-h-[80vh] flex-col gap-5 overflow-hidden rounded-2xl border border-border bg-card/80 p-5 backdrop-blur-sm">
       <div>
         <p className="text-xs font-medium uppercase tracking-[0.2em] text-accent">
           Mission control
@@ -65,6 +78,55 @@ export function ProviderPanel({
       >
         New chat
       </button>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted">
+          History
+        </p>
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+          {historyLoading ? (
+            <p className="text-xs text-muted">Loading saved chats…</p>
+          ) : conversations.length === 0 ? (
+            <p className="text-xs text-muted">No saved chats yet.</p>
+          ) : (
+            conversations.map((conversation) => {
+              const active = conversation.id === activeConversationId;
+
+              return (
+                <div
+                  key={conversation.id}
+                  className={`group rounded-xl border px-3 py-2 transition ${
+                    active
+                      ? "border-accent/40 bg-accent-soft"
+                      : "border-border bg-background/30 hover:border-accent/20"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onSelectConversation(conversation.id)}
+                    className="w-full text-left"
+                  >
+                    <p className="truncate text-sm text-foreground">
+                      {conversation.title}
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted">
+                      {formatConversationTime(conversation.updatedAt)} ·{" "}
+                      {conversation.messageCount} msg
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteConversation(conversation.id)}
+                    className="mt-2 hidden text-[11px] text-muted transition group-hover:inline hover:text-red-300"
+                  >
+                    Delete
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
 
       <label className="flex flex-col gap-2 text-sm">
         <span className="text-muted">Provider</span>
@@ -113,16 +175,13 @@ export function ProviderPanel({
         </label>
       ) : null}
 
-      <div className="mt-auto rounded-xl border border-border bg-background/40 p-3 text-xs leading-6 text-muted">
+      <div className="rounded-xl border border-border bg-background/40 p-3 text-xs leading-6 text-muted">
         <p className="font-medium text-foreground">Active route</p>
         <p className="mt-1">
           {activeProvider?.name ?? provider} ·{" "}
           {useCustomModel ? customModel.trim() : model}
         </p>
-        <p className="mt-2">
-          Cloud keys live in <code className="text-foreground">.env.local</code>
-          .
-        </p>
+        <p className="mt-2">Chats are saved locally on this machine.</p>
       </div>
     </aside>
   );

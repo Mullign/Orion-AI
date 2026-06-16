@@ -1,13 +1,19 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   getActiveModel,
   ProviderPanel,
   type ProviderInfo,
 } from "@/components/app/ProviderPanel";
+import {
+  formatConversationTime,
+  storedMessagesToUi,
+  uiMessagesToStored,
+} from "@/lib/conversations/messages";
+import type { ConversationSummary, StoredMessage } from "@/lib/conversations/types";
 
 const quickPrompts = [
   "Explain Orion in one paragraph.",
@@ -29,12 +35,87 @@ export function ChatWorkspace() {
   const [model, setModel] = useState("llama3.2");
   const [customModel, setCustomModel] = useState("");
   const [input, setInput] = useState("");
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const skipSaveRef = useRef(false);
 
   const { messages, sendMessage, setMessages, status, error, stop } = useChat();
 
   const isLoading = status === "submitted" || status === "streaming";
   const activeModel = getActiveModel(provider, model, customModel);
+
+  const refreshConversations = useCallback(async () => {
+    const response = await fetch("/api/conversations");
+    if (!response.ok) return [];
+
+    const data = (await response.json()) as {
+      conversations: ConversationSummary[];
+    };
+
+    setConversations(data.conversations);
+    return data.conversations;
+  }, []);
+
+  const loadConversation = useCallback(
+    async (id: string) => {
+      skipSaveRef.current = true;
+      const response = await fetch(`/api/conversations/${id}`);
+
+      if (!response.ok) {
+        skipSaveRef.current = false;
+        return;
+      }
+
+      const data = (await response.json()) as {
+        conversation: {
+          id: string;
+          provider: string;
+          model: string;
+          customModel: string;
+          messages: StoredMessage[];
+        };
+      };
+
+      setConversationId(data.conversation.id);
+      setProvider(data.conversation.provider);
+      setModel(data.conversation.model);
+      setCustomModel(data.conversation.customModel);
+      setMessages(storedMessagesToUi(data.conversation.messages));
+      window.setTimeout(() => {
+        skipSaveRef.current = false;
+      }, 0);
+    },
+    [setMessages],
+  );
+
+  const createConversation = useCallback(async () => {
+    skipSaveRef.current = true;
+    const response = await fetch("/api/conversations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ provider, model, customModel }),
+    });
+
+    if (!response.ok) {
+      skipSaveRef.current = false;
+      return null;
+    }
+
+    const data = (await response.json()) as {
+      conversation: { id: string };
+    };
+
+    setConversationId(data.conversation.id);
+    setMessages([]);
+    await refreshConversations();
+    window.setTimeout(() => {
+      skipSaveRef.current = false;
+    }, 0);
+
+    return data.conversation.id;
+  }, [customModel, model, provider, refreshConversations, setMessages]);
 
   useEffect(() => {
     fetch("/api/providers")
@@ -59,6 +140,47 @@ export function ChatWorkspace() {
       });
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      setHistoryLoading(true);
+      const items = await refreshConversations();
+
+      if (!active) return;
+
+      if (items.length > 0) {
+        await loadConversation(items[0].id);
+      } else {
+        skipSaveRef.current = true;
+        const response = await fetch("/api/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+
+        if (response.ok) {
+          const data = (await response.json()) as {
+            conversation: { id: string };
+          };
+          setConversationId(data.conversation.id);
+          setMessages([]);
+          await refreshConversations();
+        }
+
+        skipSaveRef.current = false;
+      }
+
+      if (active) setHistoryLoading(false);
+    })();
+
+    return () => {
+      active = false;
+    };
+    // Load saved history once on sign-in.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleProviderChange = (nextProvider: string) => {
     setProvider(nextProvider);
     const next = providers.find((item) => item.id === nextProvider);
@@ -71,15 +193,66 @@ export function ChatWorkspace() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, status]);
 
+  useEffect(() => {
+    if (!conversationId || skipSaveRef.current || isLoading) return;
+
+    const timer = window.setTimeout(async () => {
+      await fetch(`/api/conversations/${conversationId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: uiMessagesToStored(messages),
+          provider,
+          model,
+          customModel,
+        }),
+      });
+
+      await refreshConversations();
+    }, 600);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    conversationId,
+    customModel,
+    isLoading,
+    messages,
+    model,
+    provider,
+    refreshConversations,
+  ]);
+
   const submitMessage = (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || isLoading || !conversationId) return;
 
     sendMessage(
       { text: trimmed },
       { body: { provider, model: activeModel } },
     );
     setInput("");
+  };
+
+  const handleNewChat = async () => {
+    await createConversation();
+  };
+
+  const handleSelectConversation = async (id: string) => {
+    if (id === conversationId) return;
+    await loadConversation(id);
+  };
+
+  const handleDeleteConversation = async (id: string) => {
+    await fetch(`/api/conversations/${id}`, { method: "DELETE" });
+    const items = await refreshConversations();
+
+    if (conversationId === id) {
+      if (items.length > 0) {
+        await loadConversation(items[0].id);
+      } else {
+        await createConversation();
+      }
+    }
   };
 
   return (
@@ -92,8 +265,14 @@ export function ChatWorkspace() {
         onProviderChange={handleProviderChange}
         onModelChange={setModel}
         onCustomModelChange={setCustomModel}
-        onNewChat={() => setMessages([])}
+        onNewChat={handleNewChat}
         messageCount={messages.length}
+        conversations={conversations}
+        activeConversationId={conversationId}
+        historyLoading={historyLoading}
+        onSelectConversation={handleSelectConversation}
+        onDeleteConversation={handleDeleteConversation}
+        formatConversationTime={formatConversationTime}
       />
 
       <div className="flex min-h-[70vh] flex-col gap-4">
@@ -103,6 +282,7 @@ export function ChatWorkspace() {
               <p className="text-sm font-medium text-foreground">Orion Chat</p>
               <p className="text-xs text-muted">
                 {provider} · {activeModel}
+                {historyLoading ? " · loading history…" : " · saved locally"}
               </p>
             </div>
             {isLoading ? (
@@ -124,7 +304,7 @@ export function ChatWorkspace() {
                     What are we exploring today?
                   </p>
                   <p className="mt-2 text-sm text-muted">
-                    Pick a provider, choose a model, and start transmitting.
+                    Chats save to your machine and reload when you sign back in.
                   </p>
                 </div>
                 <div className="flex flex-wrap justify-center gap-2">
@@ -193,11 +373,11 @@ export function ChatWorkspace() {
                 value={input}
                 placeholder="Transmit a message..."
                 onChange={(event) => setInput(event.target.value)}
-                disabled={isLoading}
+                disabled={isLoading || historyLoading}
               />
               <button
                 type="submit"
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || historyLoading || !input.trim()}
                 className="rounded-full bg-accent px-5 py-3 text-sm font-medium text-background transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isLoading ? "..." : "Send"}

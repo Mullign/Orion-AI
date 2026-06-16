@@ -38,7 +38,7 @@ services:
       context: ./chat
       dockerfile: Dockerfile
     ports:
-      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:3001"
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7080}:3001"
     depends_on:
       ollama:
         condition: service_healthy
@@ -49,8 +49,8 @@ services:
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
       AI_PROVIDER: ${AI_PROVIDER:-ollama}
       ORION_PULL_MODEL: ${ORION_PULL_MODEL:-true}
-      APP_USERNAME: ${ORION_ADMIN_USER:-admin}
-      APP_PASSWORD: ${ORION_ADMIN_PASSWORD:-}
+      APP_USERNAME: ${ORION_ADMIN_USER:-orion}
+      APP_PASSWORD: ${ORION_ADMIN_PASSWORD:-orion}
       AUTH_SECRET: ${AUTH_SECRET:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
@@ -60,7 +60,7 @@ services:
       GOOGLE_MODEL: ${GOOGLE_MODEL:-gemini-2.0-flash}
       ORION_SYSTEM_PROMPT: ${ORION_SYSTEM_PROMPT:-}
       APP_DATA_DIR: /app/data
-      APP_PORT: ${APP_PORT:-7000}
+      APP_PORT: ${APP_PORT:-7080}
     volumes:
       - ${APP_DATA_DIR:-./data}:/app/data
     restart: unless-stopped
@@ -82,7 +82,7 @@ services:
       context: ./chat
       dockerfile: Dockerfile.dev
     ports:
-      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:3001"
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7080}:3001"
     depends_on:
       ollama:
         condition: service_healthy
@@ -96,11 +96,11 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2}
       AI_PROVIDER: ${AI_PROVIDER:-ollama}
-      APP_USERNAME: ${ORION_ADMIN_USER:-admin}
-      APP_PASSWORD: ${ORION_ADMIN_PASSWORD:-}
+      APP_USERNAME: ${ORION_ADMIN_USER:-orion}
+      APP_PASSWORD: ${ORION_ADMIN_PASSWORD:-orion}
       AUTH_SECRET: ${AUTH_SECRET:-}
       APP_DATA_DIR: /app/data
-      APP_PORT: ${APP_PORT:-7000}
+      APP_PORT: ${APP_PORT:-7080}
     env_file:
       - path: .env
         required: false

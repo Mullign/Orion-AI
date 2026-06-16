@@ -1,26 +1,27 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-export const SESSION_COOKIE = "orion-session";
+import { SESSION_COOKIE } from "@/lib/auth-constants";
+import { isAuthConfigured, readRuntimeAuth } from "@/lib/auth-store";
+
+export { isAuthConfigured };
 
 function getSecret() {
-  const secret = process.env.AUTH_SECRET?.trim();
-  if (!secret) {
+  const auth = readRuntimeAuth();
+  if (!auth?.authSecret) {
     throw new Error("AUTH_SECRET is not configured.");
   }
 
-  return new TextEncoder().encode(secret);
+  return new TextEncoder().encode(auth.authSecret);
 }
 
 export function getCredentials() {
-  const username = process.env.APP_USERNAME?.trim();
-  const password = process.env.APP_PASSWORD?.trim();
-
-  if (!username || !password) {
+  const auth = readRuntimeAuth();
+  if (!auth) {
     throw new Error("APP_USERNAME and APP_PASSWORD must be configured.");
   }
 
-  return { username, password };
+  return { username: auth.username, password: auth.password };
 }
 
 export function validateCredentials(inputUsername: string, inputPassword: string) {
@@ -42,6 +43,10 @@ export async function verifySessionToken(token: string) {
 }
 
 export async function getSessionUsername() {
+  if (!isAuthConfigured()) {
+    return null;
+  }
+
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE)?.value;
 

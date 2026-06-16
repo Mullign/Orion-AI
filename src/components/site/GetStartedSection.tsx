@@ -70,11 +70,12 @@ export function GetStartedSection() {
             Quick local setup
           </p>
           <pre className="code-block overflow-x-auto text-xs leading-6 text-muted">
-            {`cp .env.example .env
-docker compose up -d --build
-docker compose logs orion
+            {`npm run setup
 
-# Open http://127.0.0.1:7000/login`}
+# or manually:
+cp .env.example .env
+docker compose up -d --build
+# open http://127.0.0.1:7080/setup`}
           </pre>
         </div>
       </div>

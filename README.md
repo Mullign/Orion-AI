@@ -9,25 +9,27 @@ Inspired by the install flow of [Odysseus](https://github.com/pewdiepie-archdaem
 ```bash
 git clone https://github.com/Mullign/Orion-AI.git
 cd Orion-AI
+npm run setup
+```
+
+`npm run setup` asks for your username and password, then starts the stack.
+
+Or manually:
+
+```bash
 cp .env.example .env
 docker compose up -d --build
 ```
 
-Open **http://127.0.0.1:7000/login**
+Open **http://127.0.0.1:7080/login** — default credentials are **orion** / **orion** (change in `.env` or via `/setup` on first launch).
 
-The first admin password is printed in the logs:
-
-```bash
-docker compose logs orion
-```
-
-Optional: set `ORION_ADMIN_PASSWORD` in `.env` before first boot to choose your own password.
+> **macOS note:** Port 7000 is often used by AirPlay Receiver and can return HTTP 403. Orion defaults to **7080** instead.
 
 ## What's included
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| **Orion** (chat app) | 7000 | Password-protected AI workspace |
+| **Orion** (chat app) | 7080 | Password-protected AI workspace |
 | **Ollama** | 11434 | Local model server (loopback only) |
 | **Site** (optional) | 3000 | Marketing/docs — `docker compose --profile site up -d` |
 
@@ -58,12 +60,12 @@ npm run dev:chat   # chat app on :3001
 
 All Docker settings live in the root `.env` (copy from `.env.example`):
 
-- `APP_PORT` — chat app port (default `7000`)
+- `APP_PORT` — chat app port (default `7080`)
 - `OLLAMA_MODEL` — default local model
-- `ORION_ADMIN_USER` / `ORION_ADMIN_PASSWORD` — login credentials
+- `ORION_ADMIN_USER` / `ORION_ADMIN_PASSWORD` — login credentials (set via `npm run setup` or `/setup`)
 - `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` — optional cloud providers
 
-Runtime auth secrets are persisted in `./data/runtime.env` after first boot.
+Runtime auth secrets and chat history are persisted in `./data/` after first boot.
 
 ## Useful commands
 

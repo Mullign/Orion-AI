@@ -4,43 +4,28 @@ set -e
 DATA_DIR="${APP_DATA_DIR:-/app/data}"
 mkdir -p "$DATA_DIR"
 
-ADMIN_USER="${APP_USERNAME:-admin}"
+RUNTIME_FILE="$DATA_DIR/runtime.env"
+ADMIN_USER="${ORION_ADMIN_USER:-${APP_USERNAME:-orion}}"
+ADMIN_PASSWORD="${ORION_ADMIN_PASSWORD:-${APP_PASSWORD:-orion}}"
 
-if [ ! -f "$DATA_DIR/runtime.env" ]; then
-  GENERATED_PASSWORD=false
-
-  if [ -z "$AUTH_SECRET" ]; then
-    AUTH_SECRET=$(openssl rand -hex 32)
-  fi
-
-  if [ -z "$APP_PASSWORD" ]; then
-    APP_PASSWORD=$(openssl rand -base64 24 | tr -dc 'A-Za-z0-9' | head -c 18)
-    GENERATED_PASSWORD=true
-  fi
-
-  cat > "$DATA_DIR/runtime.env" <<EOF
+if [ ! -f "$RUNTIME_FILE" ]; then
+  if [ -n "$ADMIN_PASSWORD" ]; then
+    AUTH_SECRET="${AUTH_SECRET:-$(openssl rand -hex 32)}"
+    cat > "$RUNTIME_FILE" <<EOF
 AUTH_SECRET=${AUTH_SECRET}
 APP_USERNAME=${ADMIN_USER}
-APP_PASSWORD=${APP_PASSWORD}
+APP_PASSWORD=${ADMIN_PASSWORD}
 EOF
-
-  if [ "$GENERATED_PASSWORD" = true ]; then
-    echo ""
-    echo "=============================================="
-    echo " Orion first-time setup"
-    echo " Username: ${ADMIN_USER}"
-    echo " Password: ${APP_PASSWORD}"
-    echo " Open http://${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}/login"
-    echo " Set ORION_ADMIN_PASSWORD in .env to choose your own."
-    echo "=============================================="
-    echo ""
+    echo "[orion] Admin account configured (${ADMIN_USER})"
   else
-    echo "[orion] Admin account configured from .env (${ADMIN_USER})"
+    AUTH_SECRET="${AUTH_SECRET:-$(openssl rand -hex 32)}"
+    printf 'AUTH_SECRET=%s\n' "$AUTH_SECRET" > "$RUNTIME_FILE"
+    echo "[orion] Finish setup at http://${APP_BIND:-127.0.0.1}:${APP_PORT:-7080}/setup"
   fi
 fi
 
 # shellcheck disable=SC1091
-. "$DATA_DIR/runtime.env"
+. "$RUNTIME_FILE"
 export AUTH_SECRET APP_USERNAME APP_PASSWORD
 
 OLLAMA_HOST="${OLLAMA_BASE_URL:-http://ollama:11434}"
