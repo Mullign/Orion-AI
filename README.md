@@ -21,9 +21,42 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-Open **http://127.0.0.1:7080/login** — default credentials are **orion** / **orion** (change in `.env` or via `/setup` on first launch).
+Open **http://127.0.0.1:7080/login** (or **http://127.0.0.1:7080/setup** on first launch).
 
 > **macOS note:** Port 7000 is often used by AirPlay Receiver and can return HTTP 403. Orion defaults to **7080** instead.
+
+### Login credentials
+
+| Situation | Username | Password |
+|-----------|----------|----------|
+| First launch, no `data/runtime.env` yet | `orion` (from `.env`) | `orion` (from `.env`) |
+| After first boot or `/setup` | See `data/runtime.env` | See `data/runtime.env` |
+
+On first boot, Orion writes `./data/runtime.env` with `APP_USERNAME` and `APP_PASSWORD`. **That file overrides `.env`** for login.
+
+To reset credentials and start fresh:
+
+```bash
+rm data/runtime.env
+docker compose up -d --build
+# open http://127.0.0.1:7080/setup
+```
+
+If you change `APP_PORT` in `.env`, recreate containers so the port mapping updates:
+
+```bash
+docker compose down
+docker compose up -d --build
+```
+
+### Chat app vs marketing site
+
+| Command | What it runs | URL |
+|---------|--------------|-----|
+| `docker compose up -d --build` | **Chat app** (Ollama + auth) | http://127.0.0.1:7080 |
+| `npm run dev` | Marketing/docs site only | http://127.0.0.1:3000 |
+
+The chat app is **not** started by `npm run dev` at the repo root.
 
 ## What's included
 
