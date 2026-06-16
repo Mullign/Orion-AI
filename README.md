@@ -2,8 +2,6 @@
 
 Self-hosted AI chat workspace — local Ollama, optional cloud providers, password protected.
 
-Inspired by the install flow of [Odysseus](https://github.com/pewdiepie-archdaemon/odysseus).
-
 ## Screenshots
 
 **Sign in** — password-protected access to your local workspace.
