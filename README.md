@@ -4,6 +4,16 @@ Self-hosted AI chat workspace — local Ollama, optional cloud providers, passwo
 
 Inspired by the install flow of [Odysseus](https://github.com/pewdiepie-archdaemon/odysseus).
 
+## Screenshots
+
+**Sign in** — password-protected access to your local workspace.
+
+![Orion login screen](docs/screenshots/login.png)
+
+**Chat workspace** — local Ollama models, saved conversations, optional cloud providers.
+
+![Orion chat workspace](docs/screenshots/workspace.png)
+
 ## Quick start (Docker)
 
 ```bash
